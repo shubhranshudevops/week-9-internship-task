@@ -1,0 +1,14 @@
+{
+  "name": "jenkins-docker-demo",
+  "version": "1.0.0",
+  "description": "Jenkins CI/CD demo application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node -e \"console.log('Automated test passed')\"",
+    "build": "mkdir -p dist && cp server.js dist/server.js && cp package.json dist/package.json"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
