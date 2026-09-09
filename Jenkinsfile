@@ -55,13 +55,13 @@ pipeline {
                 echo 'Pushing Docker image to Docker Hub...'
 
                 withCredentials([usernamePassword(credentialsId: 'docker_hub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) 
-
-                sh 'docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest'
-                sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                sh 'docker push ${DOCKER_IMAGE}:${IMAGE_TAG}'
-                sh 'docker push ${DOCKER_IMAGE}:latest'
-                sh 'docker logout'
-                
+                {
+                    sh 'docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest'
+                    sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                    sh 'docker push ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                    sh 'docker push ${DOCKER_IMAGE}:latest'
+                    sh 'docker logout'
+                }
             }
         }
     }
