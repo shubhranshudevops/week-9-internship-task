@@ -1,7 +1,11 @@
 pipeline {
 
     agent any
-
+    
+    tools {
+            nodejs 'node'
+    }
+    
     environment {
         APP_NAME = "internship-task-week-9"
         DOCKER_IMAGE = "shubh01devops/week-9-internship-task"
