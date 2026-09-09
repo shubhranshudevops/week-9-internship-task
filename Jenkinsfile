@@ -57,7 +57,7 @@ pipeline {
                 sh 'docker push ${DOCKER_IMAGE}:${IMAGE_TAG}'
                 sh 'docker push ${DOCKER_IMAGE}:latest'
                 sh 'docker logout'
-                }
+                
             }
         }
     }
