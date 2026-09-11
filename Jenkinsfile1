@@ -16,7 +16,7 @@ pipeline {
         APPLICATION_PORT = "3000"
         // File used to store the last successfully deployed image 
         STABLE_IMAGE_FILE = ".last_successful_image"   
-        PREVIOUS_BUILD = "$((BUILD_NUMBER - 1))"
+        PREVIOUS_BUILD = "${(BUILD_NUMBER - 1)}"
     }
 
     stages {
