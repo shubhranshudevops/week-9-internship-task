@@ -7,17 +7,19 @@ pipeline {
     }
     
     environment {
+        INSTANCE_IP = "52.66.237.80"
         APP_NAME = "week-9-activity-internship"
         DOCKER_IMAGE = "shubh01devops/week-9-internship-activity"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        CURRENT_IMAGE = "${DOCKER_IMAGE}:${IMAGE_TAG}"
         CONTAINER_NAME = "week-9-activity-con"
         APPLICATION_PORT = "3000"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-    
-      
+        // File used to store the last successfully deployed image 
+        STABLE_IMAGE_FILE = ".last_successful_image"
+              
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo 'Checking out source code from GitHub...'
@@ -40,29 +42,20 @@ pipeline {
             }
         }
 
-        stage('Package') {
-            steps {
-                echo 'Creating application package...'
-                sh 'tar -czf ${APP_NAME}-${BUILD_NUMBER}.tar.gz server.js package.json Dockerfile'
-            }
-        }
-
         stage('Docker Build') {
             steps {
-                echo 'Building Docker image...'
-                sh 'docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} .'
+                echo 'Building Docker image: ${CURRENT_IMAGE}...'
+                sh 'docker build -t ${CURRENT_IMAGE} .'
             }
         }
 
         stage('Docker Push') {
             steps {
                 echo 'Pushing Docker image to Docker Hub...'
-
                 withCredentials([usernamePassword(credentialsId: 'docker_hub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) 
                 {
-                    sh 'docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest'
                     sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                    sh 'docker push ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                    sh 'docker push ${CURRENT_IMAGE}'
                     sh 'docker logout'
                 }
             }
@@ -72,23 +65,103 @@ pipeline {
             steps {
                 echo 'Deploying new application version...'
                 sh 'docker rm -f ${CONTAINER_NAME} || true'
-                sh 'docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                sh 'docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${CURRENT_IMAGE}'
+                echo 'New application version deployed Successfully.'
             }
         }
 
+        stage('Verify') {
+            steps { 
+                script {
+                    echo 'Waiting for application to start...'
+                    sleep 10
+                    echo 'Checking application health...'
+                    def verifyStatus = sh(
+                        script: """
+                        curl --fail http://${INSTANCE_IP}:${APP_PORT}/health
+                        """,
+                        returnStatus: true
+                    )
+                    if (verifyStatus == 0) {
+                        echo 'Application verification successful.' 
+                        env.DEPLOYMENT_FAILED = "false"
+                    } 
+                    else { 
+                        echo 'Application verification FAILED.' 
+                        env.DEPLOYMENT_FAILED = "true" 
+                    }
+                }
+            }
+        }
+
+        stage('Rollback') { 
+            when { 
+                expression { return env.DEPLOYMENT_FAILED == "true" } 
+            } 
+            steps { 
+                script {  
+                    echo 'Deployment failed. Starting rollback...'
+                    def stableImageExists = fileExists( "${STABLE_IMAGE_FILE}" ) 
+                    if (stableImageExists) { 
+                        def stableImage = readFile( "${STABLE_IMAGE_FILE}" ).trim() 
+                        echo 'Last successful deployment: ${stableImage}'
+                        echo 'Pulling the last stable Docker image...'
+                        sh 'docker pull ${stableImage}' 
+                        echo 'Removing failed deployment...' 
+                        sh 'docker rm -f ${CONTAINER_NAME} || true' 
+                        echo 'Starting previous stable version...' 
+                        sh 'docker run -d --name ${CONTAINER_NAME} -p ${APP_PORT}:3000 ${stableImage}'
+                        echo 'Verifying rollback...'
+                        echo 'Waiting for application to start...'
+                        sleep 10
+                        echo 'Checking application health...'
+                        sh 'curl --fail http://${INSTANCE_IP}:${APP_PORT}/health'
+                        echo 'Rollback completed successfully...' 
+                        echo 'Application restored to ${stableImage}'
+                    }
+                    else {
+                        echo 'No previous successful deployment found...'
+                        echo 'Rollback cannot be performed for the first deployment...'
+                    }
+                }
+            }
+        }
+
+        //This stage runs ONLY when deployment and verification are successful.  
+        stage('Save Stable Version') {
+            when { 
+                expression { return env.DEPLOYMENT_FAILED == "false" } 
+            } 
+            steps { 
+                script {
+                    echo 'Saving ${CURRENT_IMAGE} as the last successful deployment...' 
+                    writeFile( 
+                            file: "${STABLE_IMAGE_FILE}",
+                            text: "${CURRENT_IMAGE}" ) 
+                    echo 'Stable version saved: ${CURRENT_IMAGE}' 
+                } 
+            }
+        }
     }
 
     post {
         success {
-            echo 'CI/CD Pipeline completed successfully.'
+            echo '===================================================================='
+            echo 'CI/CD Pipeline completed successfully...'
+            echo 'Application deployed successfully...'
+            echo '===================================================================='
         }
 
         failure {
+            echo '===================================================================='
             echo 'Pipeline failed. Check the Jenkins console output.'
+            echo '===================================================================='
         }
 
         always {
+            echo '===================================================================='
             echo 'Pipeline execution completed....'
+            echo '===================================================================='
         }
     }
 }
