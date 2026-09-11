@@ -12,11 +12,10 @@ pipeline {
         DOCKER_IMAGE = "shubh01devops/week-9-internship-activity"
         IMAGE_TAG = "${BUILD_NUMBER}"
         CURRENT_IMAGE = "${DOCKER_IMAGE}:${IMAGE_TAG}"
-        CONTAINER_NAME = "week-9-activity-con-${IMAGE_TAG}"
+        CONTAINER_NAME = "week-9-activity-container"
         APPLICATION_PORT = "3000"
         // File used to store the last successfully deployed image 
         STABLE_IMAGE_FILE = ".last_successful_image"   
-        PREVIOUS_BUILD = "${(BUILD_NUMBER.toInteger() - 1)}"
     }
 
     stages {
@@ -64,7 +63,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying new application version...'
-                sh "docker rm -f ${CONTAINER_NAME}${PREVIOUS_BUILD} || true"
                 sh "docker rm -f ${CONTAINER_NAME} || true"
                 sh "docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${CURRENT_IMAGE}"
                 echo 'New application version deployed Successfully...'
@@ -109,7 +107,6 @@ pipeline {
                         echo 'Pulling the last stable Docker image...'
                         sh "docker pull ${stableImage}" 
                         echo 'Removing failed deployment...' 
-                        sh "docker rm -f ${CONTAINER_NAME}${PREVIOUS_BUILD} || true"
                         sh "docker rm -f ${CONTAINER_NAME} || true" 
                         echo 'Starting previous stable version...' 
                         sh "docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${stableImage}"
