@@ -79,7 +79,7 @@ pipeline {
                         script: """
                         curl --show-error http://${INSTANCE_IP}:${APPLICATION_PORT}/health
                         """,
-                        returnStatus: true
+                        returnStdout: true
                     ).trim()
                     echo "Health Response: ${healthResponse}"
                     if (healthResponse.contains('"status":"UP"')) {
