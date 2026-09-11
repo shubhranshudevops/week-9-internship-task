@@ -7,7 +7,7 @@ pipeline {
     }
     
     environment {
-        INSTANCE_IP = "52.66.237.80"
+        INSTANCE_IP = "52.66.237.80"  // This is EC2 Instance Public IP so Change it if you restart instance
         APP_NAME = "week-9-activity-internship"
         DOCKER_IMAGE = "shubh01devops/week-9-internship-activity"
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -15,8 +15,7 @@ pipeline {
         CONTAINER_NAME = "week-9-activity-con-${IMAGE_TAG}"
         APPLICATION_PORT = "3000"
         // File used to store the last successfully deployed image 
-        STABLE_IMAGE_FILE = ".last_successful_image"
-              
+        STABLE_IMAGE_FILE = ".last_successful_image"             
     }
 
     stages {
@@ -78,7 +77,7 @@ pipeline {
                     echo 'Checking application health...'
                     def verifyStatus = sh(
                         script: """
-                        curl --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health
+                        curl --silent --show-error --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health
                         """,
                         returnStatus: true
                     )
@@ -115,7 +114,7 @@ pipeline {
                         echo 'Waiting for application to start...'
                         sleep 10
                         echo 'Checking application health...'
-                        sh 'curl --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health'
+                        sh 'curl --silent --show-error --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health'
                         echo 'Rollback completed successfully...' 
                         echo 'Application restored to ${stableImage}'
                     }
