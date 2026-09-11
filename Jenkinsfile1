@@ -63,7 +63,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying new application version...'
-                sh "docker rm -f ${CONTAINER_NAME}-1 || true"
+                sh "docker rm -f ${CONTAINER_NAME} || true"
                 sh "docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${CURRENT_IMAGE}"
                 echo 'New application version deployed Successfully...'
             }
