@@ -16,7 +16,7 @@ pipeline {
         APPLICATION_PORT = "3000"
         // File used to store the last successfully deployed image 
         STABLE_IMAGE_FILE = ".last_successful_image"   
-        PREVIOUS_BUILD = "${(BUILD_NUMBER - 1)}"
+        PREVIOUS_BUILD = "${(BUILD_NUMBER.toInteger() - 1)}"
     }
 
     stages {
@@ -29,8 +29,8 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'Installing dependencies and building application...'
-                sh 'npm install'
+                echo 'Installing dependencies and building application...'  // Use Single Quotes(') for plain text without any variables. Jenkins will print the text exactly as written.
+                sh 'npm install'                                            // Use Single Quotes(') for plain text without any variables. Jenkins will print the text exactly as written
                 sh 'npm run build'
             }
         }
@@ -44,8 +44,8 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                echo 'Building Docker image...'
-                sh 'docker build -t ${CURRENT_IMAGE} .'
+                echo "Building Docker image :${CURRENT_IMAGE}..."  // se Double Quotes (") when you want to include and evaluate variables inside the string.
+                sh "docker build -t ${CURRENT_IMAGE} ."           //Use Double Quotes (") when you want to include and evaluate variables inside the string.
             }
         }
 
@@ -54,8 +54,8 @@ pipeline {
                 echo 'Pushing Docker image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker_hub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) 
                 {
-                    sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                    sh 'docker push ${CURRENT_IMAGE}'
+                    sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    sh 'docker push ${CURRENT_IMAGE}"
                     sh 'docker logout'
                 }
             }
@@ -64,9 +64,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying new application version...'
-                sh 'docker rm -f ${CONTAINER_NAME}${PREVIOUS_BUILD} || true'
-                sh 'docker rm -f ${CONTAINER_NAME} || true'
-                sh 'docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${CURRENT_IMAGE}'
+                sh "docker rm -f ${CONTAINER_NAME}${PREVIOUS_BUILD} || true"
+                sh "docker rm -f ${CONTAINER_NAME} || true"
+                sh "docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${CURRENT_IMAGE}"
                 echo 'New application version deployed Successfully...'
             }
         }
@@ -105,20 +105,21 @@ pipeline {
                     def stableImageExists = fileExists( "${STABLE_IMAGE_FILE}" ) 
                     if (stableImageExists) { 
                         def stableImage = readFile( "${STABLE_IMAGE_FILE}" ).trim() 
-                        echo 'Last successful deployment: ${stableImage}'
+                        echo "Last successful deployment: ${stableImage}"
                         echo 'Pulling the last stable Docker image...'
-                        sh 'docker pull ${stableImage}' 
+                        sh "docker pull ${stableImage}" 
                         echo 'Removing failed deployment...' 
-                        sh 'docker rm -f ${CONTAINER_NAME} || true' 
+                        sh "docker rm -f ${CONTAINER_NAME}${PREVIOUS_BUILD} || true"
+                        sh "docker rm -f ${CONTAINER_NAME} || true" 
                         echo 'Starting previous stable version...' 
-                        sh 'docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${stableImage}'
+                        sh "docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${stableImage}"
                         echo 'Verifying rollback...'
                         echo 'Waiting for application to start...'
                         sleep 10
                         echo 'Checking application health...'
-                        sh 'curl --silent --show-error --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health'
+                        sh "curl --silent --show-error --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health"
                         echo 'Rollback completed successfully...' 
-                        echo 'Application restored to ${stableImage}'
+                        echo "Application restored to ${stableImage}"
                     }
                     else {
                         echo 'No previous successful deployment found...'
@@ -128,18 +129,19 @@ pipeline {
             }
         }
 
-        //This stage runs ONLY when deployment and verification are successful.  
+    //This stage runs ONLY when deployment and verification are successful.  
         stage('Save Stable Version') {
             when { 
                 expression { return env.DEPLOYMENT_FAILED == "false" } 
             } 
             steps { 
                 script {
-                    echo 'Saving ${CURRENT_IMAGE} as the last successful deployment...' 
+                    echo "Saving ${CURRENT_IMAGE} as the last successful deployment..." 
                     writeFile( 
                             file: "${STABLE_IMAGE_FILE}",
-                            text: "${CURRENT_IMAGE}" ) 
-                    echo 'Stable version saved: ${CURRENT_IMAGE}' 
+                            text: "${CURRENT_IMAGE}" 
+                    ) 
+                    echo "Stable version saved: ${CURRENT_IMAGE}" 
                 } 
             }
         }
