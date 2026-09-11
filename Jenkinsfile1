@@ -75,18 +75,21 @@ pipeline {
                     echo 'Waiting for application to start...'
                     sleep 10
                     echo 'Checking application health...'
-                    def verifyStatus = sh(
+                    def healthResponse = sh(
                         script: """
                         curl --show-error http://${INSTANCE_IP}:${APPLICATION_PORT}/health
                         """,
                         returnStatus: true
-                    )
-                    if (verifyStatus == 0) {
-                        echo 'Application verification successful.' 
+                    ).trim()
+                    echo "Health Response: ${healthResponse}"
+                    if (healthResponse.contains('"status":"UP"')) {
+                        echo 'Application verification successful...'
+                        echo 'Application is Healthy & Rollback is NOT Required...'
                         env.DEPLOYMENT_FAILED = "false"
                     } 
                     else { 
-                        echo 'Application verification FAILED.' 
+                        echo 'Application verification FAILED...'
+                        echo 'Starting Rollback...'
                         env.DEPLOYMENT_FAILED = "true" 
                     }
                 }
