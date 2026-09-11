@@ -12,7 +12,7 @@ pipeline {
         DOCKER_IMAGE = "shubh01devops/week-9-internship-activity"
         IMAGE_TAG = "${BUILD_NUMBER}"
         CURRENT_IMAGE = "${DOCKER_IMAGE}:${IMAGE_TAG}"
-        CONTAINER_NAME = "week-9-activity-con"
+        CONTAINER_NAME = "week-9-activity-con-${IMAGE_TAG}"
         APPLICATION_PORT = "3000"
         // File used to store the last successfully deployed image 
         STABLE_IMAGE_FILE = ".last_successful_image"
@@ -44,7 +44,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                echo 'Building Docker image: ${CURRENT_IMAGE}...'
+                echo 'Building Docker image...'
                 sh 'docker build -t ${CURRENT_IMAGE} .'
             }
         }
@@ -54,7 +54,7 @@ pipeline {
                 echo 'Pushing Docker image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker_hub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) 
                 {
-                    sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                    sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
                     sh 'docker push ${CURRENT_IMAGE}'
                     sh 'docker logout'
                 }
@@ -66,7 +66,7 @@ pipeline {
                 echo 'Deploying new application version...'
                 sh 'docker rm -f ${CONTAINER_NAME} || true'
                 sh 'docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${CURRENT_IMAGE}'
-                echo 'New application version deployed Successfully.'
+                echo 'New application version deployed Successfully...'
             }
         }
 
@@ -78,7 +78,7 @@ pipeline {
                     echo 'Checking application health...'
                     def verifyStatus = sh(
                         script: """
-                        curl --fail http://${INSTANCE_IP}:${APP_PORT}/health
+                        curl --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health
                         """,
                         returnStatus: true
                     )
@@ -110,12 +110,12 @@ pipeline {
                         echo 'Removing failed deployment...' 
                         sh 'docker rm -f ${CONTAINER_NAME} || true' 
                         echo 'Starting previous stable version...' 
-                        sh 'docker run -d --name ${CONTAINER_NAME} -p ${APP_PORT}:3000 ${stableImage}'
+                        sh 'docker run -d --name ${CONTAINER_NAME} -p ${APPLICATION_PORT}:3000 ${stableImage}'
                         echo 'Verifying rollback...'
                         echo 'Waiting for application to start...'
                         sleep 10
                         echo 'Checking application health...'
-                        sh 'curl --fail http://${INSTANCE_IP}:${APP_PORT}/health'
+                        sh 'curl --fail http://${INSTANCE_IP}:${APPLICATION_PORT}/health'
                         echo 'Rollback completed successfully...' 
                         echo 'Application restored to ${stableImage}'
                     }
