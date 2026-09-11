@@ -12,7 +12,7 @@ pipeline {
         CONTAINER_NAME = "week-9-activity-con"
         APPLICATION_PORT = "3000"
         IMAGE_TAG = "${BUILD_NUMBER}"
-        PREVIOUS_IMAGE = "shubh01devops/week-9-internship-activity:${BUILD_NUMBER.toInteger() - 1}
+    
       
     }
 
