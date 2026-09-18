@@ -30,7 +30,7 @@ pipeline {
             steps {
                 echo 'Installing dependencies and building application...'  // Use Single Quotes(') for plain text without any variables. Jenkins will print the text exactly as written.
                 sh 'npm install'                                            // Use Single Quotes(') for plain text without any variables. Jenkins will print the text exactly as written.
-                sh 'npm audit fix --force || true'
+                sh 'npm ci'
                 sh 'npm run build'
             }
         }
