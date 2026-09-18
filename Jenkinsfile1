@@ -7,7 +7,7 @@ pipeline {
     }
     
     environment {
-        INSTANCE_IP = "52.66.237.80"  // This is EC2 Instance Public IP so Change it if you restart instance
+        INSTANCE_IP = "13.232.197.36"  // This is EC2 Instance Public IP so Change it if you restart instance
         APP_NAME = "week-9-activity-internship"
         DOCKER_IMAGE = "shubh01devops/week-9-internship-activity"
         IMAGE_TAG = "${BUILD_NUMBER}"
