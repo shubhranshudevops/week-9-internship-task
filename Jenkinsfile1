@@ -26,6 +26,20 @@ pipeline {
             }
         }
 
+        stage('Dependency Check') {
+            steps {
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'npm ls tar || true'
+            }
+        }
+
+        stage('Check Lock File') {
+            steps {
+                sh 'grep -n "\"node_modules/tar\"" package-lock.json || true'
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Installing dependencies and building application...'  // Use Single Quotes(') for plain text without any variables. Jenkins will print the text exactly as written.
