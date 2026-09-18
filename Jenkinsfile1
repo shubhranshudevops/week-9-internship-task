@@ -45,7 +45,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 echo "Building Docker image :${CURRENT_IMAGE}..."  // se Double Quotes (") when you want to include and evaluate variables inside the string.
-                sh "docker build -t ${CURRENT_IMAGE} ."           //Use Double Quotes (") when you want to include and evaluate variables inside the string.
+                sh "docker build --no-cache -t ${CURRENT_IMAGE} ."           //Use Double Quotes (") when you want to include and evaluate variables inside the string.
             }
         }
 
